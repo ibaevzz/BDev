@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
+import com.ibaevzz.bdev.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -23,19 +24,94 @@ import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var binding: ActivityMainBinding
+
     private var bluetoothSocket: BluetoothSocket? = null
     private var outputStream: OutputStream? = null
     private var inputStream: InputStream? = null
     private var address = ""
+    private var oldAddress = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         address = intent.getStringExtra("MAC").toString()
-        lifecycleScope.launch {
-            connect(address)
+
+        binding.connect.setOnClickListener{
+            makeButtonsClick(false)
+            lifecycleScope.launch {
+                connect(address)
+                withContext(Dispatchers.Main){
+                    binding.find.isClickable = true
+                    binding.close.isClickable = true
+                }
+            }
         }
+
+        binding.find.setOnClickListener{
+            makeButtonsClick(false)
+            lifecycleScope.launch {
+                val res = pulsarAddress()
+                withContext(Dispatchers.Main){
+                    binding.address.text = res.first.toString()
+                    binding.value.text = res.second.toString()
+                    oldAddress = res.first
+                    makeButtonsClick(true)
+                }
+            }
+        }
+
+        binding.write.setOnClickListener{
+            makeButtonsClick(false)
+            lifecycleScope.launch {
+                val add = binding.newAddress.text.toString()
+                val value = binding.newValue.text.toString()
+                if(pulsarWrite(oldAddress.toString(), value.toDouble(), add.toInt())){
+                    Toast.makeText(this@MainActivity, "Успешная запись", Toast.LENGTH_SHORT).show()
+                    oldAddress = add.toInt()
+                }else{
+                    Toast.makeText(this@MainActivity, "Ошибка", Toast.LENGTH_SHORT).show()
+                }
+                makeButtonsClick(true)
+            }
+        }
+
+        binding.check.setOnClickListener{
+            makeButtonsClick(false)
+            lifecycleScope.launch {
+                val add = binding.newAddress.text.toString()
+                val value = binding.newValue.text.toString()
+                val trip = pulsarRead(oldAddress.toString())
+                if(trip.second != null && trip.third != null){
+                    if(trip.second == add.toInt() && trip.third == value.toDouble()){
+                        Toast.makeText(this@MainActivity, "Успешно", Toast.LENGTH_SHORT).show()
+                    }else{
+                        Toast.makeText(this@MainActivity, "Неуспешная запись", Toast.LENGTH_SHORT).show()
+                    }
+                }else{
+                    Toast.makeText(this@MainActivity, "Неуспешная запись", Toast.LENGTH_SHORT).show()
+                }
+                makeButtonsClick(true)
+            }
+        }
+
+        binding.close.setOnClickListener{
+            makeButtonsClick(false)
+            lifecycleScope.launch {
+                closeConnection()
+                binding.connect.isClickable = true
+            }
+        }
+    }
+
+    private fun makeButtonsClick(isClick: Boolean){
+        binding.connect.isClickable = isClick
+        binding.find.isClickable = isClick
+        binding.write.isClickable = isClick
+        binding.check.isClickable = isClick
+        binding.close.isClickable = isClick
     }
 
     override fun onDestroy() {
