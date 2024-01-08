@@ -209,8 +209,8 @@ class MainActivity : AppCompatActivity() {
         return devID
     }
 
-    private suspend fun getValue(address: ByteArray, devId: Int): Double{
-        var value = 0.0
+    private suspend fun getValue(address: ByteArray, devId: Int): Double?{
+        var value: Double? = null
         val res = tryAttempts(PulsarFunc.injectCRC(address +
                 Constants.GET_VALUE_REQUEST
                 + toBytes(1, 2)))
@@ -235,7 +235,7 @@ class MainActivity : AppCompatActivity() {
         val res = tryAttempts(PulsarFunc.injectCRC(address+
                 Constants.GET_ADDRESS_REQUEST[index] +
                 toBytes(1, 2)))
-        var value = 0
+        var value = -1
         if(res.first==1){
             if(index==0){
                 value = PulsarFunc.newAddr(res.second)
@@ -277,7 +277,7 @@ class MainActivity : AppCompatActivity() {
         val value = getValue(PulsarFunc.splitAddressPulsar(
             resultDict["address"].toString()),
             resultDict["devid"]?:0)
-        return (resultDict["address"]?:0) to value
+        return (resultDict["address"]?:0) to (value ?: 0.0)
     }
 
     private suspend fun pulsarWrite(oldAddress: String, newValue: Double, newAddress: Int): Boolean{
@@ -305,6 +305,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return false
+    }
+
+    private suspend fun pulsarRead(address: String): Triple<Int?, Int?, Double?>{
+        val pAddress = PulsarFunc.splitAddressPulsar(address)
+        val devId = getDeviceID(pAddress)
+        if(devId == -1)
+            return Triple(null, null, null)
+        val address = getAddress(pAddress, devId)
+        if(address == -1){
+            return Triple(devId, null, null)
+        }
+        val value = getValue(pAddress, devId) ?: return Triple(devId, address, null)
+        return Triple(devId, address, value)
     }
 
     private fun fromBytes(ch: ByteArray): Int{
