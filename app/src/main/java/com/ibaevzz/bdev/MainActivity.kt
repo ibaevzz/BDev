@@ -44,8 +44,9 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 connect(address)
                 withContext(Dispatchers.Main){
-                    binding.find.isClickable = true
-                    binding.close.isClickable = true
+                    binding.connect.isEnabled = false
+                    binding.find.isEnabled = true
+                    binding.close.isEnabled = true
                 }
             }
         }
@@ -68,6 +69,11 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 val add = binding.newAddress.text.toString()
                 val value = binding.newValue.text.toString()
+                if(add == "" || value == "" || value[0] == '.'){
+                    Toast.makeText(this@MainActivity, "Ошибка", Toast.LENGTH_SHORT).show()
+                    makeButtonsClick(true)
+                    return@launch
+                }
                 if(pulsarWrite(oldAddress.toString(), value.toDouble(), add.toInt())){
                     Toast.makeText(this@MainActivity, "Успешная запись", Toast.LENGTH_SHORT).show()
                     oldAddress = add.toInt()
@@ -83,6 +89,11 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 val add = binding.newAddress.text.toString()
                 val value = binding.newValue.text.toString()
+                if(add == "" || value == "" || value[0] == '.'){
+                    Toast.makeText(this@MainActivity, "Ошибка", Toast.LENGTH_SHORT).show()
+                    makeButtonsClick(true)
+                    return@launch
+                }
                 val trip = pulsarRead(oldAddress.toString())
                 if(trip.second != null && trip.third != null){
                     if(trip.second == add.toInt() && trip.third == value.toDouble()){
@@ -101,17 +112,18 @@ class MainActivity : AppCompatActivity() {
             makeButtonsClick(false)
             lifecycleScope.launch {
                 closeConnection()
-                binding.connect.isClickable = true
+                binding.connect.isEnabled = true
+                binding.value.text = ""
+                binding.address.text = ""
             }
         }
     }
 
     private fun makeButtonsClick(isClick: Boolean){
-        binding.connect.isClickable = isClick
-        binding.find.isClickable = isClick
-        binding.write.isClickable = isClick
-        binding.check.isClickable = isClick
-        binding.close.isClickable = isClick
+        binding.find.isEnabled = isClick
+        binding.write.isEnabled = isClick
+        binding.check.isEnabled = isClick
+        binding.close.isEnabled = isClick
     }
 
     override fun onDestroy() {

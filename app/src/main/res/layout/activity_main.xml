@@ -19,7 +19,7 @@
 
     <Button
         android:id="@+id/find"
-        android:clickable="false"
+        android:enabled="false"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="20dp"
@@ -91,7 +91,7 @@
         app:layout_constraintTop_toBottomOf="@id/newAddress"/>
 
     <Button
-        android:clickable="false"
+        android:enabled="false"
         android:id="@+id/write"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -103,7 +103,7 @@
         app:layout_constraintRight_toRightOf="parent"/>
 
     <Button
-        android:clickable="false"
+        android:enabled="false"
         android:id="@+id/check"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -115,7 +115,7 @@
         app:layout_constraintRight_toRightOf="parent"/>
 
     <Button
-        android:clickable="false"
+        android:enabled="false"
         android:id="@+id/close"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
