@@ -23,8 +23,6 @@ import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
 
-    var i = 0
-
     private var bluetoothSocket: BluetoothSocket? = null
     private var outputStream: OutputStream? = null
     private var inputStream: InputStream? = null
@@ -51,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT)
             != PackageManager.PERMISSION_GRANTED) { return false }
 
-        bluetoothSocket = device?.createInsecureRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
+        bluetoothSocket = device?.createInsecureRfcommSocketToServiceRecord(UUID.fromString(Constants.UUID))
         try {
             withContext(Dispatchers.IO) {
                 bluetoothSocket?.connect()
