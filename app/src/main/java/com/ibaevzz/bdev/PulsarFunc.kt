@@ -27,8 +27,8 @@ object PulsarFunc {
             }
         }
         val dataResult = ByteArray(2)
-        dataResult[0] = result.toString(16).slice(2..3).toUByte(16).toByte()
-        dataResult[1] = result.toString(16).slice(0..1).toUByte(16).toByte()
+        dataResult[0] = result.toString(16).padStart(4, '0').slice(2..3).toUByte(16).toByte()
+        dataResult[1] = result.toString(16).padStart(4, '0').slice(0..1).toUByte(16).toByte()
         return dataResult
     }
 

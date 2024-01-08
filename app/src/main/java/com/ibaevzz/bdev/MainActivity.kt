@@ -21,8 +21,9 @@ import java.util.*
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-
 class MainActivity : AppCompatActivity() {
+
+    var i = 0
 
     private var bluetoothSocket: BluetoothSocket? = null
     private var outputStream: OutputStream? = null
@@ -157,7 +158,7 @@ class MainActivity : AppCompatActivity() {
         if(devId == 98){
             dataValue = floatToHex(value)
         }else{
-            dataValue = toBytes(value.toInt(), 4)
+            dataValue = toBytes(value.roundToInt(), 4)
             value /= 1000
         }
         val res = tryAttempts(PulsarFunc.injectCRC(address + Constants.WRITE_VALUE_REQUEST + dataValue + toBytes(1, 2)))
@@ -188,7 +189,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun getDeviceID(address: ByteArray): Int{
-        var devID = 0
+        var devID = -1
         for(i in 0 until Constants.GET_DEVICE_ID_REQUEST.size){
             val res = tryAttempts(PulsarFunc.injectCRC(address + Constants.GET_DEVICE_ID_REQUEST[i]))
             if(res.first == 1){
@@ -277,6 +278,33 @@ class MainActivity : AppCompatActivity() {
             resultDict["address"].toString()),
             resultDict["devid"]?:0)
         return (resultDict["address"]?:0) to value
+    }
+
+    private suspend fun pulsarWrite(oldAddress: String, newValue: Double, newAddress: Int): Boolean{
+        if(!PulsarFunc.isValidAddress(newAddress.toString())){
+            return false
+        }
+        val pAddress = PulsarFunc.splitAddressPulsar(oldAddress)
+
+        val devId = getDeviceID(pAddress)
+        if(devId==-1) return false
+
+        val resValue = writeNewValue(pAddress, newValue, devId)
+        if(resValue.first==3) return false
+        if(resValue.first==1){
+            if(PulsarFunc.handlePulsarErrorCode(resValue.second)!=0){
+                if(!enterPassword(pAddress, devId)){
+                    return false
+                }
+            }
+        }
+        val addressRes = writeAddress(pAddress, newAddress, devId)
+        if(addressRes.first==1){
+            if(PulsarFunc.handlePulsarErrorCode(addressRes.second)==0) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun fromBytes(ch: ByteArray): Int{
