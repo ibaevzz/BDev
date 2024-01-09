@@ -1,14 +1,12 @@
 package com.ibaevzz.bdev
 
-import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.ibaevzz.bdev.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
@@ -41,12 +39,17 @@ class MainActivity : AppCompatActivity() {
 
         binding.connect.setOnClickListener{
             makeButtonsClick(false)
+            binding.connect.isEnabled = false
             lifecycleScope.launch {
-                connect(address)
-                withContext(Dispatchers.Main){
-                    binding.connect.isEnabled = false
-                    binding.find.isEnabled = true
-                    binding.close.isEnabled = true
+                if (connect(address)) {
+                    withContext(Dispatchers.Main) {
+                        binding.find.isEnabled = true
+                        binding.close.isEnabled = true
+                    }
+                    Toast.makeText(this@MainActivity, "Успешно подключено", Toast.LENGTH_SHORT).show()
+                } else {
+                    binding.connect.isEnabled = true
+                    Toast.makeText(this@MainActivity, "Не удалось подключиться", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -131,22 +134,19 @@ class MainActivity : AppCompatActivity() {
         closeConnection()
     }
 
+    @SuppressLint("MissingPermission")
     private suspend fun connect(deviceAddress: String): Boolean {
         if(!BluetoothAdapter.getDefaultAdapter().isEnabled) return false
-        val device: BluetoothDevice? = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(deviceAddress)
-        if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT)
-            != PackageManager.PERMISSION_GRANTED) { return false }
 
-        bluetoothSocket = device?.createInsecureRfcommSocketToServiceRecord(UUID.fromString(Constants.UUID))
         try {
+            val device: BluetoothDevice? = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(deviceAddress)
+            bluetoothSocket = device?.createInsecureRfcommSocketToServiceRecord(UUID.fromString(Constants.UUID))
             withContext(Dispatchers.IO) {
                 bluetoothSocket?.connect()
                 outputStream = bluetoothSocket?.outputStream
                 inputStream = bluetoothSocket?.inputStream
             }
-            Toast.makeText(this@MainActivity, "Успешно подключено", Toast.LENGTH_SHORT).show()
-        }catch (_: IOException){
-            Toast.makeText(this@MainActivity, "Не удалось подключиться", Toast.LENGTH_SHORT).show()
+        }catch (ex: IOException) {
             return false
         }
         return true
@@ -256,7 +256,7 @@ class MainActivity : AppCompatActivity() {
         var requestID = 1
         val dataValue: ByteArray
         if(PulsarFunc.splitAddressPulsar(newAddress.toString()).contentEquals(address)||
-                newAddress == 0){
+            newAddress == 0){
             return Triple(5, ByteArray(0), newAddress)
         }
         if(index==0){
@@ -303,9 +303,9 @@ class MainActivity : AppCompatActivity() {
         if(res.first == 1){
             if(res.second.size>=10){
                 val payload = byteArrayOf(res.second[6],
-                        res.second[7],
-                        res.second[8],
-                        res.second[9])
+                    res.second[7],
+                    res.second[8],
+                    res.second[9])
                 value = if(devId == 98){
                     (hexToFloat(payload)*1000).roundToInt()/1000.0
                 }else{
