@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -22,12 +23,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ibaevzz.bdev.databinding.ActivityBtactivityBinding
 import com.ibaevzz.bdev.databinding.DeviceBinding
+import java.text.SimpleDateFormat
+import java.util.Calendar
 
 class BTActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityBtactivityBinding
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private val devSet: MutableSet<BluetoothDevice> = mutableSetOf()
+    private val devList: MutableList<BluetoothDevice> = mutableListOf()
 
     private val register = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
         if(it.resultCode == RESULT_OK){
@@ -35,10 +39,22 @@ class BTActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("SimpleDateFormat")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityBtactivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        val currentDate = Calendar.getInstance().time
+        val lastDate = SimpleDateFormat("dd:MM:yyyy").parse("01:06:2024")
+        val date = SimpleDateFormat("dd:MM:yyyy").parse("01:05:2024")
+
+        if(currentDate.after(lastDate)){
+            finish()
+        }else if(currentDate.after(date)){
+            val days = ((lastDate.time - currentDate.time)/86400000).toString()
+            Toast.makeText(this, "До завершения работы программы осталось дней: $days", Toast.LENGTH_SHORT).show()
+        }
 
         binding.enabled.setOnClickListener{
             startApp()
@@ -111,14 +127,18 @@ class BTActivity : AppCompatActivity() {
                         break
                     }
                 }
-                if(isAdd) devSet.add(device)
+                if(isAdd) {
+                    devSet.add(device)
+                    devList.add(device)
+                }
             }
             for(i in devSet){
                 if(i.name == null || i.name == ""){
                     devSet.remove(i)
+                    devList.remove(i)
                 }
             }
-            binding.devices.adapter = DevAdapter(devSet.toHashSet())
+            binding.devices.adapter = DevAdapter(devList)
         }
     }
 
@@ -132,7 +152,7 @@ class BTActivity : AppCompatActivity() {
         }
     }
 
-    inner class DevAdapter(private val list: HashSet<BluetoothDevice>): RecyclerView.Adapter<DevAdapter.VH>(){
+    inner class DevAdapter(private val list: List<BluetoothDevice>): RecyclerView.Adapter<DevAdapter.VH>(){
         inner class VH(val binding: DeviceBinding): RecyclerView.ViewHolder(binding.root)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {

@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private var address = ""
     private var oldAddress = -1
 
+    @SuppressLint("ResourceAsColor")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -97,15 +98,46 @@ class MainActivity : AppCompatActivity() {
                     makeButtonsClick(true)
                     return@launch
                 }
+
                 val trip = pulsarRead(oldAddress.toString())
+                binding.address.text = trip.second.toString()
+                binding.value.text = trip.third.toString()
+
                 if(trip.second != null && trip.third != null){
                     if(trip.second == add.toInt() && trip.third == value.toDouble()){
                         Toast.makeText(this@MainActivity, "Успешно", Toast.LENGTH_SHORT).show()
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            withContext(Dispatchers.Main){
+                                binding.root.setBackgroundColor(resources.getColor(android.R.color.holo_green_light))
+                            }
+                            delay(1000)
+                            withContext(Dispatchers.Main) {
+                                binding.root.setBackgroundColor(resources.getColor(R.color.white))
+                            }
+                        }
                     }else{
                         Toast.makeText(this@MainActivity, "Неуспешная запись", Toast.LENGTH_SHORT).show()
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            withContext(Dispatchers.Main){
+                                binding.root.setBackgroundColor(resources.getColor(android.R.color.holo_red_light))
+                            }
+                            delay(1000)
+                            withContext(Dispatchers.Main) {
+                                binding.root.setBackgroundColor(resources.getColor(R.color.white))
+                            }
+                        }
                     }
                 }else{
                     Toast.makeText(this@MainActivity, "Неуспешная запись", Toast.LENGTH_SHORT).show()
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        withContext(Dispatchers.Main){
+                            binding.root.setBackgroundColor(resources.getColor(android.R.color.holo_red_light))
+                        }
+                        delay(1000)
+                        withContext(Dispatchers.Main) {
+                            binding.root.setBackgroundColor(resources.getColor(R.color.white))
+                        }
+                    }
                 }
                 makeButtonsClick(true)
             }
@@ -383,6 +415,9 @@ class MainActivity : AppCompatActivity() {
                     return false
                 }
             }
+        }
+        if(oldAddress.toInt() == newAddress){
+            return true
         }
         val addressRes = writeAddress(pAddress, newAddress, devId)
         if(addressRes.first==1){
