@@ -58,12 +58,16 @@ class MainActivity : AppCompatActivity() {
         binding.find.setOnClickListener{
             makeButtonsClick(false)
             lifecycleScope.launch {
-                val res = pulsarAddress()
-                withContext(Dispatchers.Main){
-                    binding.address.text = res.first.toString()
-                    binding.value.text = res.second.toString()
-                    oldAddress = res.first
-                    makeButtonsClick(true)
+                try {
+                    val res = pulsarAddress()
+                    withContext(Dispatchers.Main){
+                        binding.address.text = res.first.toString()
+                        binding.value.text = res.second.toString()
+                        oldAddress = res.first
+                        makeButtonsClick(true)
+                    }
+                }catch (_: IOException){
+                    Toast.makeText(this@MainActivity, "Ошибка", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -199,21 +203,30 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun readMessage(): ByteArray? {
         val buffer = ByteArray(128)
-        val bytes: Int
+        var reqResult: ByteArray? = null
+        var bytes: Int
         try {
-            delay(300)
             return withContext(Dispatchers.IO) {
-                if ((inputStream?.available() ?: 0) > 0) {
-                    bytes = inputStream?.read(buffer) ?: -1
-                    if (bytes != -1) {
-                        val result = ByteArray(bytes)
-                        for (i in 0 until bytes) {
-                            result[i] = buffer[i]
+                while(true) {
+                    delay(1000)
+                    if ((inputStream?.available() ?: 0) > 0) {
+                        bytes = inputStream?.read(buffer) ?: -1
+                        if (bytes != -1) {
+                            val result = ByteArray(bytes)
+                            for (i in 0 until bytes) {
+                                result[i] = buffer[i]
+                            }
+                            reqResult = if(reqResult!=null){
+                                reqResult!! + result
+                            }else{
+                                result
+                            }
                         }
-                        return@withContext result
+                    }else{
+                        break
                     }
                 }
-                return@withContext null
+                return@withContext reqResult
             }
         } catch (e: IOException) {
             Toast.makeText(this@MainActivity, "Ошибка", Toast.LENGTH_SHORT).show()
@@ -383,7 +396,7 @@ class MainActivity : AppCompatActivity() {
             val res = tryAttempts(PulsarFunc.injectCRC(if(i < 2)
                 Constants.ADDRESS_REQUEST[i] else
                 PulsarFunc.splitAddressPulsar(
-                    resultDict["address"].toString()) + Constants.ADDRESS_REQUEST[i]))
+                    (resultDict["address"]?:0).toString()) + Constants.ADDRESS_REQUEST[i]))
             if(res.first==1){
                 if(res.second[4] == 0.toByte() && res.second[6] == 4.toByte()){
                     continue
