@@ -26,6 +26,7 @@ import com.ibaevzz.bdev.databinding.DeviceBinding
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
+@Suppress("DEPRECATION")
 class BTActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityBtactivityBinding
@@ -46,7 +47,7 @@ class BTActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val currentDate = Calendar.getInstance().time
-        val lastDate = SimpleDateFormat("dd:MM:yyyy").parse("01:06:2024")
+        val lastDate = SimpleDateFormat("dd:MM:yyyy").parse("01:06:2024")!!
         val date = SimpleDateFormat("dd:MM:yyyy").parse("01:05:2024")
 
         if(currentDate.after(lastDate)){
