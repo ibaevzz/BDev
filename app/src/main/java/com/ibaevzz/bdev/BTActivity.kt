@@ -170,7 +170,8 @@ class BTActivity : AppCompatActivity() {
             holder.binding.name.text = list.toList()[position].name
             holder.binding.root.setOnClickListener{
                 val intent = Intent(this@BTActivity, MainActivity::class.java)
-                intent.putExtra("MAC", list.toList()[position].address)
+                intent.putExtra(MAC, list.toList()[position].address)
+                intent.putExtra(IS_NETWORK_EXTRA, false)
                 startActivity(intent)
             }
         }
