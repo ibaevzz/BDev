@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.content.Context
+import android.net.wifi.WifiManager
 import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -12,6 +13,8 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.InetAddress
+import java.net.Socket
 import java.util.*
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -23,6 +26,9 @@ class PulsarService(private val context: Context, private val bAddress: String) 
     private var bluetoothSocket: BluetoothSocket? = null
     private var outputStream: OutputStream? = null
     private var inputStream: InputStream? = null
+    private var socket: Socket? = null
+    private val isConnect get() = socket?.isConnected?:false
+    private var macAddress = "0"
 
     suspend fun connect(): Boolean {
         if(!BluetoothAdapter.getDefaultAdapter().isEnabled) return false
@@ -38,6 +44,40 @@ class PulsarService(private val context: Context, private val bAddress: String) 
             return false
         }
         return true
+    }
+
+    suspend fun connectWifi(address: String, port: String){
+        this.macAddress = address
+        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        if(!wifiManager.isWifiEnabled) throw Exception()
+        if(wifiManager.dhcpInfo.gateway != macAddress.toInt()) throw Exception()
+        if(!wifiManager.connectionInfo.ssid.contains(PMSK_PNR)) throw Exception()
+        withContext(Dispatchers.IO) {
+            if(isConnect) return@withContext
+            closeWifiConnection()
+
+            val ip = address.toInt()
+
+            socket = Socket(
+                InetAddress.getByAddress(byteArrayOf(
+                    (ip).toByte(),
+                    (ip ushr 8).toByte(),
+                    (ip ushr 16).toByte(),
+                    (ip ushr 24).toByte())), port.toInt())
+
+            if (socket?.isConnected != true) throw Exception()
+            inputStream = socket?.getInputStream()
+            outputStream = socket?.getOutputStream()
+        }
+    }
+
+    suspend fun closeWifiConnection(){
+        withContext(Dispatchers.IO){
+            if(!isConnect) return@withContext
+            outputStream?.close()
+            inputStream?.close()
+            socket?.close()
+        }
     }
 
     fun closeConnection() {

@@ -10,7 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.IOException
 import java.util.*
 
 @Suppress("DEPRECATION")
@@ -26,21 +25,44 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        pulsarService = PulsarService(this, intent.getStringExtra("MAC").toString())
+        pulsarService = PulsarService(this, intent.getStringExtra(MAC)?:"")
+
+        val isNetwork = intent.getBooleanExtra(IS_NETWORK_EXTRA, false)
 
         binding.connect.setOnClickListener{
             makeButtonsClick(false)
             binding.connect.isEnabled = false
             lifecycleScope.launch {
-                if (pulsarService.connect()) {
-                    withContext(Dispatchers.Main) {
-                        binding.find.isEnabled = true
-                        binding.close.isEnabled = true
+                if(!isNetwork) {
+                    if (pulsarService.connect()) {
+                        withContext(Dispatchers.Main) {
+                            binding.find.isEnabled = true
+                            binding.close.isEnabled = true
+                        }
+                        Toast.makeText(this@MainActivity, "Успешно подключено", Toast.LENGTH_SHORT)
+                            .show()
+                    } else {
+                        binding.connect.isEnabled = true
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Не удалось подключиться",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
-                    Toast.makeText(this@MainActivity, "Успешно подключено", Toast.LENGTH_SHORT).show()
-                } else {
-                    binding.connect.isEnabled = true
-                    Toast.makeText(this@MainActivity, "Не удалось подключиться", Toast.LENGTH_SHORT).show()
+                }else{
+                    try {
+                        pulsarService.connectWifi(intent.getStringExtra(IP_EXTRA)?:"", intent.getStringExtra(
+                            PORT_EXTRA)?:"")
+                        withContext(Dispatchers.Main) {
+                            binding.find.isEnabled = true
+                            binding.close.isEnabled = true
+                            Toast.makeText(this@MainActivity, "Успешно подключено", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    }catch (e: Exception){
+                        binding.connect.isEnabled = true
+                        Toast.makeText(this@MainActivity, "Не удалось подключиться", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -56,8 +78,9 @@ class MainActivity : AppCompatActivity() {
                         oldAddress = res.first
                         makeButtonsClick(true)
                     }
-                }catch (_: IOException){
+                }catch (e: Exception){
                     Toast.makeText(this@MainActivity, "Ошибка", Toast.LENGTH_SHORT).show()
+                    binding.find.isEnabled = true
                 }
             }
         }
@@ -140,7 +163,12 @@ class MainActivity : AppCompatActivity() {
         binding.close.setOnClickListener{
             makeButtonsClick(false)
             lifecycleScope.launch {
-                pulsarService.closeConnection()
+                if(isNetwork){
+                    pulsarService.closeWifiConnection()
+                }else {
+                    pulsarService.closeConnection()
+                }
+                pulsarService = PulsarService(this@MainActivity, intent.getStringExtra(MAC)?:"")
                 binding.connect.isEnabled = true
                 binding.value.text = ""
                 binding.address.text = ""
@@ -157,6 +185,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        pulsarService.closeConnection()
+        if(intent.getBooleanExtra(IS_NETWORK_EXTRA, false)){
+            lifecycleScope.launch {
+                pulsarService.closeWifiConnection()
+            }
+        }else{
+            pulsarService.closeConnection()
+        }
     }
 }
