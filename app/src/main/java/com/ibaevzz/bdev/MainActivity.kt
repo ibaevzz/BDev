@@ -81,6 +81,7 @@ class MainActivity : AppCompatActivity() {
                 }catch (e: Exception){
                     Toast.makeText(this@MainActivity, "Ошибка", Toast.LENGTH_SHORT).show()
                     binding.find.isEnabled = true
+                    binding.close.isEnabled = true
                 }
             }
         }

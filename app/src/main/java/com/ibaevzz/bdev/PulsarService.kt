@@ -182,7 +182,7 @@ class PulsarService(private val context: Context, private val bAddress: String) 
         try {
             return withContext(Dispatchers.IO) {
                 while(true) {
-                    delay(1000)
+                    delay(300)
                     if ((inputStream?.available() ?: 0) > 0) {
                         bytes = inputStream?.read(buffer) ?: -1
                         if (bytes != -1) {
@@ -210,16 +210,12 @@ class PulsarService(private val context: Context, private val bAddress: String) 
 
     private suspend fun tryAttempts(nData: ByteArray): Pair<Int, ByteArray>{
         var result = 3
-        var recData: ByteArray? = null
-        for(i in 0..2) {
-            recData = sendMessage(nData)
-            if (recData != null && recData.isNotEmpty()) {
-                if (checkCRC(recData)){
-                    result = 1
-                    break
-                }else{
-                    result = 2
-                }
+        val recData: ByteArray? = sendMessage(nData)
+        if (recData != null && recData.isNotEmpty()) {
+            result = if (checkCRC(recData)){
+                1
+            }else{
+                2
             }
         }
         return result to (recData?:ByteArray(0))
