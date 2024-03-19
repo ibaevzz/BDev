@@ -28,7 +28,6 @@ class PulsarService(private val context: Context, private val bAddress: String) 
     private var inputStream: InputStream? = null
     private var socket: Socket? = null
     private val isConnect get() = socket?.isConnected?:false
-    private var macAddress = "0"
 
     suspend fun connect(): Boolean {
         if(!BluetoothAdapter.getDefaultAdapter().isEnabled) return false
@@ -47,10 +46,8 @@ class PulsarService(private val context: Context, private val bAddress: String) 
     }
 
     suspend fun connectWifi(address: String, port: String){
-        this.macAddress = address
         val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
         if(!wifiManager.isWifiEnabled) throw Exception()
-        if(wifiManager.dhcpInfo.gateway != macAddress.toInt()) throw Exception()
         if(!wifiManager.connectionInfo.ssid.contains(PMSK_PNR)) throw Exception()
         withContext(Dispatchers.IO) {
             if(isConnect) return@withContext
