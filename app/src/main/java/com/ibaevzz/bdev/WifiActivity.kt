@@ -3,10 +3,13 @@ package com.ibaevzz.bdev
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.net.wifi.WifiManager
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.getSystemService
 import com.ibaevzz.bdev.*
 import com.ibaevzz.bdev.databinding.ActivityWifiBinding
 
@@ -17,7 +20,8 @@ class WifiActivity: AppCompatActivity() {
     }
 
     private lateinit var binding: ActivityWifiBinding
-    lateinit var wifiManager: WifiManager
+    private lateinit var wifiManager: WifiManager
+    private lateinit var locationManager: LocationManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,6 +29,7 @@ class WifiActivity: AppCompatActivity() {
         setContentView(binding.root)
 
         wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
+        locationManager = applicationContext.getSystemService(LOCATION_SERVICE) as LocationManager
 
         binding.connect.setOnClickListener{
             startActivity(Intent(WifiManager.ACTION_PICK_WIFI_NETWORK))
@@ -32,6 +37,11 @@ class WifiActivity: AppCompatActivity() {
         binding.update.setOnClickListener{
             if(!checkPermissions()){
                 requestPermissions()
+                return@setOnClickListener
+            }
+            if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)&&
+                !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)){
+                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                 return@setOnClickListener
             }
             updateIpAndHost()
